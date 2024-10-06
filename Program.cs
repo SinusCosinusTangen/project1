@@ -3,11 +3,13 @@ using project1.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<ProjectContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("Default"), ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("Default"))));
+
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<BookContext>(opt =>
-    opt.UseInMemoryDatabase("BookList"));
+builder.Services.AddDbContext<ProjectContext>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
