@@ -12,6 +12,8 @@ public class Project
     public string ProjectName { get; set;}
     [Column("project_description")]
     public string ProjectDescription { get; set;}
+    [Column("project_link")]
+    public string ProjectLink { get; set;}
     [Column("created_date")]
     public DateTime CreatedDate { get; set;}
     [Column("last_modified")]

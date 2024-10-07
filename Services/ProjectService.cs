@@ -45,8 +45,9 @@ namespace project1.Services
 				throw new Exception();
 			}
 
-			existingProject.ProjectName = projectDTO.ProjectName;
-			existingProject.ProjectDescription = projectDTO.ProjectDescriptionLong;
+			existingProject.ProjectName = projectDTO.ProjectName is null? existingProject.ProjectName : projectDTO.ProjectName;
+			existingProject.ProjectDescription = projectDTO.ProjectDescriptionLong is null? existingProject.ProjectDescription : projectDTO.ProjectDescriptionLong;
+			existingProject.ProjectLink = projectDTO.ProjectLink is null? existingProject.ProjectLink : projectDTO.ProjectLink;
 			existingProject.LastModified = DateTime.Now;
 
 			try
@@ -65,7 +66,6 @@ namespace project1.Services
 		{
 			Project project = ProjectDTOToProject(projectDTO);
 			project.CreatedDate = DateTime.Now;
-			project.LastModified = DateTime.Now;
 			
 			_context.projects.Add(project);
 			await _context.SaveChangesAsync();
@@ -101,9 +101,10 @@ namespace project1.Services
 			Project project = new Project();
 			project.Id = projectDTO.Id;
 			project.ProjectName = projectDTO.ProjectName;
-			project.ProjectDescription = projectDTO.ProjectDescriptionLong;
-			project.CreatedDate = (DateTime)projectDTO.CreatedDate;
-			project.LastModified = (DateTime)projectDTO.LastModified;
+			project.ProjectDescription = projectDTO.ProjectDescriptionLong is null? "" : projectDTO.ProjectDescriptionLong;
+			project.ProjectLink = projectDTO.ProjectLink is null? "" : projectDTO.ProjectLink;
+			project.CreatedDate = projectDTO.CreatedDate is null? (DateTime)DateTime.Now : (DateTime)projectDTO.CreatedDate;
+			project.CreatedDate = projectDTO.LastModified is null? (DateTime)DateTime.Now : (DateTime)projectDTO.LastModified;
 
 			return project;
 		}
@@ -115,6 +116,7 @@ namespace project1.Services
 			projectDTO.ProjectName = project.ProjectName;
 			projectDTO.ProjectDescriptionShort = GetSubstring(project.ProjectDescription, 50);
 			projectDTO.ProjectDescriptionLong = project.ProjectDescription;
+			projectDTO.ProjectLink = project.ProjectLink;
 			projectDTO.CreatedDate = project.CreatedDate;
 			projectDTO.LastModified = project.LastModified;
 

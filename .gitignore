@@ -47,3 +47,4 @@ obj/
 
 # Environment Variable
 appsettings.json
+appsettings.Development.json
