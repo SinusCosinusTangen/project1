@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using project1.Models;
+using project1.Models.DTO;
+using project1.Services;
 
 namespace project1.Controllers
 {
@@ -13,53 +14,75 @@ namespace project1.Controllers
     [ApiController]
     public class ProjectController : ControllerBase
     {
-        private readonly ProjectContext _context;
+        private readonly ProjectService _projectService;
 
-        public ProjectController(ProjectContext context)
+        public ProjectController(ProjectService projectService)
         {
-            _context = context;
+            _projectService = projectService;
         }
 
         // GET: api/Project
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Project>>> GetProjects()
+        public async Task<ActionResult<ProjectListResponse>> GetProjects()
         {
-            return await _context.projects.ToListAsync();
+            ProjectListResponse response = new ProjectListResponse();
+            try
+            {
+                response.Response = 200;
+                response.Message = "SUCCESS";
+                response.Data = await _projectService.GetProjects();
+            } 
+            catch (Exception e)
+            {
+                throw;
+            }
+
+            return Ok(response);
         }
 
         // GET: api/Project/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Project>> GetProject(Guid id)
+        public async Task<ActionResult<ProjectResponse>> GetProject(Guid id)
         {
-            var project = await _context.projects.FindAsync(id);
-
-            if (project == null)
+            ProjectResponse response = new ProjectResponse();
+            try
             {
-                return NotFound();
+                var project = await _projectService.GetProject(id);
+
+                if (project == null)
+                {
+                    return NotFound();
+                }
+
+                response.Response = 200;
+                response.Message = "SUCCESS";
+                response.Data = project;
+            } 
+            catch (Exception e)
+            {   
+                return BadRequest(response);
             }
 
-            return project;
+            return Ok(response);
         }
 
         // PUT: api/Project/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProject(Guid id, Project project)
+        public async Task<ActionResult<ProjectResponse>> PutProject(Guid id, ProjectDTO project)
         {
             if (id != project.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(project).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                return Ok(await _projectService.UpdateProject(id, project));
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ProjectExists(id))
+                if (!_projectService.ProjectExists(id))
                 {
                     return NotFound();
                 }
@@ -68,40 +91,29 @@ namespace project1.Controllers
                     throw;
                 }
             }
-
-            return NoContent();
         }
 
         // POST: api/Project
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Project>> PostProject(Project project)
+        public async Task<ActionResult<ProjectDTO>> PostProject(ProjectDTO project)
         {
-            _context.projects.Add(project);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
+            return Ok(await _projectService.CreateProject(project));
         }
 
         // DELETE: api/Project/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(Guid id)
         {
-            var project = await _context.projects.FindAsync(id);
-            if (project == null)
+            var project = await _projectService.GetProject(id);
+            if (!_projectService.ProjectExists(id))
             {
                 return NotFound();
             }
 
-            _context.projects.Remove(project);
-            await _context.SaveChangesAsync();
+            await _projectService.DeleteProject(id);
 
             return NoContent();
-        }
-
-        private bool ProjectExists(Guid id)
-        {
-            return _context.projects.Any(e => e.Id == id);
         }
     }
 }

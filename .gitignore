@@ -4,6 +4,7 @@ project.lock.json
 .DS_Store
 *.pyc
 nupkg/
+.editorconfig
 
 # Visual Studio Code
 .vscode/
@@ -41,6 +42,9 @@ bld/
 msbuild.log
 msbuild.err
 msbuild.wrn
+bin/
+obj/
 
 # Environment Variable
 appsettings.json
+appsettings.Development.json
