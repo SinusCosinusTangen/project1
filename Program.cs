@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using project1.Models;
+using project1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ builder.Services.AddDbContext<ProjectContext>(options =>
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<ProjectService>();
 builder.Services.AddDbContext<ProjectContext>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

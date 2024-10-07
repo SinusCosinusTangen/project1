@@ -9,18 +9,11 @@ public class Project
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set;}
     [Column("project_name")]
-    public string? ProjectName { get; set;}
+    public string ProjectName { get; set;}
     [Column("project_description")]
-    public string? ProjectDescription { get; set;}
+    public string ProjectDescription { get; set;}
     [Column("created_date")]
-    public DateTime? CreatedDate { get; set;}
+    public DateTime CreatedDate { get; set;}
     [Column("last_modified")]
-    public DateTime? LastModified { get; set;}
-
-    public Project()
-    {          
-        this.CreatedDate  = DateTime.Now;
-        this.LastModified = DateTime.Now;
-    }
-
+    public DateTime LastModified { get; set;}
 }
