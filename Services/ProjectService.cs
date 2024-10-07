@@ -6,20 +6,25 @@ namespace project1.Services
 {
 	public class ProjectService
 	{
-		private ProjectDTO projectDTO;
 		private ProjectContext _context;
+		private readonly TechStackService _techStackService;
 
-		public ProjectService(ProjectContext projectContext)
+		public ProjectService(ProjectContext projectContext, TechStackService techStackService)
 		{
 			this._context = projectContext;
+			this._techStackService = techStackService;
 		}
 
 		public async Task<IEnumerable<ProjectDTO>> GetProjects()
 		{
 			var projects = await _context.projects.ToListAsync();
-			var result = projects.Select(project => ProjectToProjectDTO(project)).ToList();
+			// Create a list of tasks for the conversion
+			var projectDTOTasks = projects.Select(project => ProjectToProjectDTO(project));
 
-			return result;
+			// Await all tasks and return the result
+			var projectDTOs = await Task.WhenAll(projectDTOTasks);
+
+			return projectDTOs.ToList(); // Convert the array to a list if needed
 		}
 
 		public async Task<ProjectDTO> GetProject(Guid id)
@@ -28,7 +33,7 @@ namespace project1.Services
 
 			if (project != null)
 			{
-				ProjectDTO projectDTO = ProjectToProjectDTO(project);
+				ProjectDTO projectDTO = await ProjectToProjectDTO(project);
 
 				return projectDTO;
 			}
@@ -38,14 +43,8 @@ namespace project1.Services
 
 		public async Task<ProjectDTO> UpdateProject(Guid id, ProjectDTO projectDTO)
 		{
-			Project existingProject = await _context.projects.FindAsync(id);
-			
-			if (existingProject == null)
-			{
-				throw new Exception();
-			}
-
-			existingProject.ProjectName = projectDTO.ProjectName is null? existingProject.ProjectName : projectDTO.ProjectName;
+			Project existingProject = await _context.projects.FindAsync(id) ?? throw new Exception();
+            existingProject.ProjectName = projectDTO.ProjectName is null? existingProject.ProjectName : projectDTO.ProjectName;
 			existingProject.ProjectDescription = projectDTO.ProjectDescriptionLong is null? existingProject.ProjectDescription : projectDTO.ProjectDescriptionLong;
 			existingProject.ProjectLink = projectDTO.ProjectLink is null? existingProject.ProjectLink : projectDTO.ProjectLink;
 			existingProject.LastModified = DateTime.Now;
@@ -70,7 +69,14 @@ namespace project1.Services
 			_context.projects.Add(project);
 			await _context.SaveChangesAsync();
 
-			return ProjectToProjectDTO(project);
+			List<TechStack> techStacks = projectDTO.techStacks;
+			foreach (TechStack techStack in techStacks)
+			{
+				techStack.ProjectId = project.Id;
+				await _techStackService.AddTechStack(techStack);
+			}
+
+			return await ProjectToProjectDTO(project);
 		}
 
 		public async Task DeleteProject(Guid id)
@@ -109,14 +115,15 @@ namespace project1.Services
 			return project;
 		}
 
-		private ProjectDTO ProjectToProjectDTO(Project project)
+		private async Task<ProjectDTO> ProjectToProjectDTO(Project project)
 		{
 			ProjectDTO projectDTO = new ProjectDTO();
 			projectDTO.Id = project.Id;
 			projectDTO.ProjectName = project.ProjectName;
-			projectDTO.ProjectDescriptionShort = GetSubstring(project.ProjectDescription, 50);
+			projectDTO.ProjectDescriptionShort = project.ProjectDescription.Length > 100 ? string.Concat(GetSubstring(project.ProjectDescription, 100), "...") : project.ProjectDescription;
 			projectDTO.ProjectDescriptionLong = project.ProjectDescription;
 			projectDTO.ProjectLink = project.ProjectLink;
+			projectDTO.techStacks = (List<TechStack>)await _techStackService.GetTechStacks(project.Id);
 			projectDTO.CreatedDate = project.CreatedDate;
 			projectDTO.LastModified = project.LastModified;
 

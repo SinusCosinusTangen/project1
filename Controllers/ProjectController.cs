@@ -34,7 +34,7 @@ namespace project1.Controllers
             } 
             catch (Exception e)
             {
-                return BadRequest();
+                throw;
             }
 
             return Ok(response);

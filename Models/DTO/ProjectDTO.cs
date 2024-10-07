@@ -9,6 +9,7 @@ public class ProjectDTO
     public string? ProjectDescriptionShort { get; set; }
     public string? ProjectDescriptionLong { get; set; }
     public string? ProjectLink { get; set; }
+    public List<TechStack> techStacks { get; set; }
     public DateTime? CreatedDate { get; set; }
     public DateTime? LastModified { get; set; }
 }
