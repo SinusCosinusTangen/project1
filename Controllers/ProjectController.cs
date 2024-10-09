@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using project1.Models.DTO;
 using project1.Services;
 using project1.Constant;
+using project1.Exceptions;
 
 namespace project1.Controllers
 {
@@ -34,16 +35,11 @@ namespace project1.Controllers
             {
                 var project = await _projectService.GetProject(id);
 
-                if (project == null)
-                {
-                    return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE));
-                }
-
                 return Ok(ConvertToResponse(ApiConstant.OK, ApiConstant.OK_MESSAGE, project));
             } 
-            catch (Exception)
+            catch (NotFoundException)
             {  
-                return BadRequest(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE));
+                return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE, "Project not found"));
             }
         }
 
@@ -54,7 +50,7 @@ namespace project1.Controllers
         {
             if (id != project.Id)
             {
-                return BadRequest(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE));
+                return BadRequest(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE, "ID not match"));
             }
 
             try
@@ -63,16 +59,13 @@ namespace project1.Controllers
 
                 return Ok(ConvertToResponse(ApiConstant.OK, ApiConstant.OK_MESSAGE, updatedProject));
             }
+            catch (NotFoundException)
+            {
+                return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE, "Project not found"));
+            }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_projectService.ProjectExists(id))
-                {
-                    return NotFound(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE));
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
         }
 
@@ -89,15 +82,16 @@ namespace project1.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(Guid id)
         {
-            var project = await _projectService.GetProject(id);
-            if (!_projectService.ProjectExists(id))
+            try
             {
-                return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE));
+                await _projectService.DeleteProject(id);
+
+                return NoContent();
             }
-
-            await _projectService.DeleteProject(id);
-
-            return NoContent();
+            catch (NotFoundException)
+            {
+                return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE, "Project not found"));
+            }
         }
 
         private static Response<ProjectDTO> ConvertToResponse(int code, string message, ProjectDTO projectDTO)
@@ -118,12 +112,12 @@ namespace project1.Controllers
             };
         }
 
-        private static Response<ProjectDTO> ConvertToResponse(int code, string message)
+        private static Response<string> ConvertToResponse(int code, string message, string data)
         {
-            return new Response<ProjectDTO>() {
+            return new Response<string>() {
                 Code = code,
                 Message = message,
-                Data = null
+                Data = data
             };
         }
     }
