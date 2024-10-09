@@ -1,90 +1,73 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using project1.Models.DTO;
 using project1.Services;
+using project1.Constant;
 
 namespace project1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProjectController : ControllerBase
+    public class ProjectController(ProjectService projectService) : ControllerBase
     {
-        private readonly ProjectService _projectService;
-
-        public ProjectController(ProjectService projectService)
-        {
-            _projectService = projectService;
-        }
+        private readonly ProjectService _projectService = projectService;
 
         // GET: api/Project
         [HttpGet]
-        public async Task<ActionResult<ProjectListResponse>> GetProjects()
+        public async Task<ActionResult<Response<IEnumerable<ProjectDTO>>>> GetProjects()
         {
-            ProjectListResponse response = new ProjectListResponse();
             try
             {
-                response.Response = 200;
-                response.Message = "SUCCESS";
-                response.Data = await _projectService.GetProjects();
+                return ConvertToResponse(ApiConstant.OK, ApiConstant.OK_MESSAGE, await _projectService.GetProjects());
             } 
-            catch (Exception e)
+            catch (Exception)
             {
-                throw;
+               throw;
             }
-
-            return Ok(response);
         }
 
-        // GET: api/Project/5
+        // GET: api/Project/xxx
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProjectResponse>> GetProject(Guid id)
+        public async Task<ActionResult<Response<ProjectDTO>>> GetProject(Guid id)
         {
-            ProjectResponse response = new ProjectResponse();
             try
             {
                 var project = await _projectService.GetProject(id);
 
                 if (project == null)
                 {
-                    return NotFound();
+                    return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE));
                 }
 
-                response.Response = 200;
-                response.Message = "SUCCESS";
-                response.Data = project;
+                return Ok(ConvertToResponse(ApiConstant.OK, ApiConstant.OK_MESSAGE, project));
             } 
-            catch (Exception e)
-            {   
-                return BadRequest(response);
+            catch (Exception)
+            {  
+                return BadRequest(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE));
             }
-
-            return Ok(response);
         }
 
-        // PUT: api/Project/5
+        // PUT: api/Project/xxx
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<ActionResult<ProjectResponse>> PutProject(Guid id, ProjectDTO project)
+        public async Task<ActionResult<Response<ProjectDTO>>> PutProject(Guid id, ProjectDTO project)
         {
             if (id != project.Id)
             {
-                return BadRequest();
+                return BadRequest(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE));
             }
 
             try
             {
-                return Ok(await _projectService.UpdateProject(id, project));
+                var updatedProject = await _projectService.UpdateProject(id, project);
+
+                return Ok(ConvertToResponse(ApiConstant.OK, ApiConstant.OK_MESSAGE, updatedProject));
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!_projectService.ProjectExists(id))
                 {
-                    return NotFound();
+                    return NotFound(ConvertToResponse(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE));
                 }
                 else
                 {
@@ -98,22 +81,50 @@ namespace project1.Controllers
         [HttpPost]
         public async Task<ActionResult<ProjectDTO>> PostProject(ProjectDTO project)
         {
-            return Ok(await _projectService.CreateProject(project));
+            var createdProject = await _projectService.CreateProject(project);
+            return Ok(ConvertToResponse(ApiConstant.OK, ApiConstant.OK_MESSAGE, createdProject));
         }
 
-        // DELETE: api/Project/5
+        // DELETE: api/Project/xxx
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(Guid id)
         {
             var project = await _projectService.GetProject(id);
             if (!_projectService.ProjectExists(id))
             {
-                return NotFound();
+                return NotFound(ConvertToResponse(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE));
             }
 
             await _projectService.DeleteProject(id);
 
             return NoContent();
+        }
+
+        private static Response<ProjectDTO> ConvertToResponse(int code, string message, ProjectDTO projectDTO)
+        {
+            return new Response<ProjectDTO>() {
+                Code = code,
+                Message = message,
+                Data = projectDTO
+            };
+        }
+
+        private static Response<IEnumerable<ProjectDTO>> ConvertToResponse(int code, string message, IEnumerable<ProjectDTO> projectDTO)
+        {
+            return new Response<IEnumerable<ProjectDTO>>() {
+                Code = code,
+                Message = message,
+                Data = projectDTO
+            };
+        }
+
+        private static Response<ProjectDTO> ConvertToResponse(int code, string message)
+        {
+            return new Response<ProjectDTO>() {
+                Code = code,
+                Message = message,
+                Data = null
+            };
         }
     }
 }

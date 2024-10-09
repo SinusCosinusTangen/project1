@@ -42,9 +42,10 @@ bld/
 msbuild.log
 msbuild.err
 msbuild.wrn
-bin/
-obj/
 
 # Environment Variable
 appsettings.json
 appsettings.Development.json
+
+# Encryption Key
+*.pem

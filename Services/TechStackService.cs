@@ -3,33 +3,13 @@ using project1.Models;
 
 namespace project1.Services
 {
-	public class TechStackService
-	{
-		private TechStackContext _context;
+	public class TechStackService(TechStackContext techStackContext)
+    {
+		private readonly TechStackContext _context = techStackContext;
 
-		public TechStackService(TechStackContext techStackContext)
+        public async Task<IEnumerable<TechStack>> GetTechStacks(Guid projectId)
 		{
-			this._context = techStackContext;
-		}
-
-		public async Task<IEnumerable<TechStack>> GetTechStacks()
-		{
-            List<TechStack> techStacks = new List<TechStack>();
-			techStacks = await _context.techStacks.ToListAsync();
-
-			return techStacks;
-		}
-
-		public async Task<IEnumerable<TechStack>> GetTechStacks(Guid projectId)
-		{
-			List<TechStack> techStacks = await _context.techStacks.Where(tech => tech.ProjectId == projectId).ToListAsync();
-
-            if (techStacks == null)
-            {
-                return [];
-            }
-
-			return techStacks;
+			return await _context.techStacks.Where(tech => tech.ProjectId == projectId).ToListAsync();
 		}
 
 		public async Task<TechStack> AddTechStack(TechStack techStack)
@@ -43,8 +23,7 @@ namespace project1.Services
 
             if (existingTechStack != null)
             {
-                // Handle the situation accordingly (e.g., update or throw an error)
-                throw new InvalidOperationException("A tech stack with the same Id already exists.");
+                throw new InvalidOperationException("A tech stack with the same Id already exists");
             }
 
             await _context.techStacks.AddAsync(techStack);

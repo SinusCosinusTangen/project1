@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace project1.Models;
-
-public class ProjectContext : DbContext
+namespace project1.Models
 {
-    public ProjectContext(DbContextOptions<ProjectContext> options) : base(options)
-    {}
+    public class ProjectContext : DbContext
+    {
+        public ProjectContext(DbContextOptions<ProjectContext> options) : base(options)
+        {}
 
-    public DbSet<Project> projects { get; set; } = null!;
+        public DbSet<Project> projects { get; set; } = null!;
+    }
 }
