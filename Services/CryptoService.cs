@@ -67,14 +67,15 @@ namespace project1.Services
 
         private static string GetKeyPath(string keyType)
         {
-            string? assemblyLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? "";
-            DirectoryInfo? assemblyDir = Directory.GetParent(assemblyLocation);
-            if (assemblyDir == null || assemblyDir.Parent == null || assemblyDir.Parent.Parent == null)
-            {
-                throw new InvalidOperationException("Unable to determine the project root directory");
-            }
+            // string? assemblyLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? "";
+            // DirectoryInfo? assemblyDir = Directory.GetParent(assemblyLocation);
+            // if (assemblyDir == null || assemblyDir.Parent == null || assemblyDir.Parent.Parent == null)
+            // {
+            //     throw new InvalidOperationException("Unable to determine the project root directory");
+            // }
             
-            string projectDir = assemblyDir.Parent.Parent.FullName;
+            // string projectDir = assemblyDir.Parent.Parent.FullName;
+            string projectDir = "/app/keys";
 
             if (keyType == "private")
             {
