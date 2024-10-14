@@ -1,119 +1,108 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using project1.Models.DTO;
 using project1.Services;
+using project1.Constant;
+using project1.Exceptions;
+using project1.Helpers;
 
 namespace project1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProjectController : ControllerBase
+    public class ProjectController(IProjectService projectService) : ControllerBase
     {
-        private readonly ProjectService _projectService;
-
-        public ProjectController(ProjectService projectService)
-        {
-            _projectService = projectService;
-        }
+        private readonly IProjectService _projectService = projectService;
 
         // GET: api/Project
         [HttpGet]
-        public async Task<ActionResult<ProjectListResponse>> GetProjects()
+        public async Task<ActionResult<Response<IEnumerable<ProjectDTO>>>> GetProjects()
         {
-            ProjectListResponse response = new ProjectListResponse();
             try
             {
-                response.Response = 200;
-                response.Message = "SUCCESS";
-                response.Data = await _projectService.GetProjects();
-            } 
-            catch (Exception e)
+                return Ok(new Response<IEnumerable<ProjectDTO>>(ApiConstant.OK, ApiConstant.OK_MESSAGE, await _projectService.GetProjects()));
+            }
+            catch (Exception)
             {
                 throw;
             }
-
-            return Ok(response);
         }
 
-        // GET: api/Project/5
+        // GET: api/Project/xxx
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProjectResponse>> GetProject(Guid id)
+        public async Task<ActionResult<Response<ProjectDTO>>> GetProject(Guid id)
         {
-            ProjectResponse response = new ProjectResponse();
             try
             {
                 var project = await _projectService.GetProject(id);
 
-                if (project == null)
-                {
-                    return NotFound();
-                }
-
-                response.Response = 200;
-                response.Message = "SUCCESS";
-                response.Data = project;
-            } 
-            catch (Exception e)
-            {   
-                return BadRequest(response);
+                return Ok(new Response<ProjectDTO>(ApiConstant.OK, ApiConstant.OK_MESSAGE, project));
             }
-
-            return Ok(response);
+            catch (NotFoundException)
+            {
+                return NotFound(new Response<string>(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE, "PROJECT NOT FOUND"));
+            }
         }
 
-        // PUT: api/Project/5
+        // PUT: api/Project/xxx
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<ActionResult<ProjectResponse>> PutProject(Guid id, ProjectDTO project)
+        [Authorize]
+        public async Task<ActionResult<Response<ProjectDTO>>> PutProject(Guid id, ProjectDTO project)
         {
             if (id != project.Id)
             {
-                return BadRequest();
+                return BadRequest(new Response<string>(ApiConstant.BAD_REQUEST, ApiConstant.BAD_REQUEST_MESSAGE, "ID NOT MATCH"));
             }
 
             try
             {
-                return Ok(await _projectService.UpdateProject(id, project));
+                var updatedProject = await _projectService.UpdateProject(id, project);
+
+                return Ok(new Response<ProjectDTO>(ApiConstant.OK, ApiConstant.OK_MESSAGE, updatedProject));
+            }
+            catch (NotFoundException)
+            {
+                return NotFound(new Response<string>(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE, "PROJECT NOT FOUND"));
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_projectService.ProjectExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
         }
 
         // POST: api/Project
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<ProjectDTO>> PostProject(ProjectDTO project)
         {
-            return Ok(await _projectService.CreateProject(project));
+            try
+            {
+                var createdProject = await _projectService.CreateProject(project);
+                return Ok(new Response<ProjectDTO>(ApiConstant.OK, ApiConstant.OK_MESSAGE, createdProject));
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
-        // DELETE: api/Project/5
+        // DELETE: api/Project/xxx
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteProject(Guid id)
         {
-            var project = await _projectService.GetProject(id);
-            if (!_projectService.ProjectExists(id))
+            try
             {
-                return NotFound();
+                await _projectService.DeleteProject(id);
+
+                return NoContent();
             }
-
-            await _projectService.DeleteProject(id);
-
-            return NoContent();
+            catch (NotFoundException)
+            {
+                return NotFound(new Response<string>(ApiConstant.NOT_FOUND, ApiConstant.NOT_FOUND_MESSAGE, "Project not found"));
+            }
         }
     }
 }
