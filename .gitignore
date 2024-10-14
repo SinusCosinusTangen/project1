@@ -44,8 +44,7 @@ msbuild.err
 msbuild.wrn
 
 # Environment Variable
-appsettings.json
-appsettings.Development.json
+appsettings.*
 
 # Encryption Key
 *.pem
