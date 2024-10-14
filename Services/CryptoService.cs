@@ -5,8 +5,10 @@ using System.Text;
 
 namespace project1.Services
 {
-	public class CryptoService()
+	public class CryptoService(IHostEnvironment environment) : ICryptoService
     {
+        private readonly IHostEnvironment _environment = environment;
+
         public string GetPublicKey()
         {
             string publicKeyPath = GetKeyPath("public");
@@ -65,17 +67,20 @@ namespace project1.Services
             }
         }
 
-        private static string GetKeyPath(string keyType)
+        private string GetKeyPath(string keyType)
         {
-            // string? assemblyLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? "";
-            // DirectoryInfo? assemblyDir = Directory.GetParent(assemblyLocation);
-            // if (assemblyDir == null || assemblyDir.Parent == null || assemblyDir.Parent.Parent == null)
-            // {
-            //     throw new InvalidOperationException("Unable to determine the project root directory");
-            // }
-            
-            // string projectDir = assemblyDir.Parent.Parent.FullName;
             string projectDir = "/app/keys";
+            if (_environment.IsDevelopment())
+            {
+                string? assemblyLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? "";
+                DirectoryInfo? assemblyDir = Directory.GetParent(assemblyLocation);
+                if (assemblyDir == null || assemblyDir.Parent == null || assemblyDir.Parent.Parent == null)
+                {
+                    throw new InvalidOperationException("Unable to determine the project root directory");
+                }
+                
+                projectDir = assemblyDir.Parent.Parent.FullName;
+            }
 
             if (keyType == "private")
             {
@@ -87,7 +92,7 @@ namespace project1.Services
             }
         }
 
-        public static string HashSha256(string text)
+        public string HashSha256(string text)
         {
             byte[] bytes = Encoding.Unicode.GetBytes(text);
             SHA256 hashstring = SHA256.Create();
@@ -116,18 +121,18 @@ namespace project1.Services
                 "\n-----END PUBLIC KEY-----";
         }
 
-        public static string EncryptMessage(string publicKey, string message)
+        public string EncryptMessage(string publicKey, string message)
         {
             using (RSA rsa = RSA.Create())
             {
                 rsa.ImportFromPem(publicKey.ToCharArray());
                 byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-                byte[] encryptedBytes = rsa.Encrypt(messageBytes, RSAEncryptionPadding.Pkcs1);
+                byte[] encryptedBytes = rsa.Encrypt(messageBytes, RSAEncryptionPadding.OaepSHA256);
                 return Convert.ToBase64String(encryptedBytes);
             }
         }
 
-        public static string DecryptMessage(string encryptedMessage)
+        public string DecryptMessage(string encryptedMessage)
         {
             string privateKeyPath = GetKeyPath("private");
             StreamReader privateKeyReader = new(privateKeyPath, true);
@@ -137,7 +142,7 @@ namespace project1.Services
             {
                 rsa.ImportFromPem(privateKey.ToCharArray());
                 byte[] encryptedBytes = Convert.FromBase64String(encryptedMessage);
-                byte[] decryptedBytes = rsa.Decrypt(encryptedBytes, RSAEncryptionPadding.Pkcs1);
+                byte[] decryptedBytes = rsa.Decrypt(encryptedBytes, RSAEncryptionPadding.OaepSHA256);
                 privateKeyReader.Close();
 
                 return Encoding.UTF8.GetString(decryptedBytes);

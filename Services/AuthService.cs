@@ -1,15 +1,29 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using project1.Exceptions;
 using project1.Models;
 using project1.Models.DTO;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace project1.Services
 {
-	public class AuthService(UserContext userContext, CryptoService cryptoService)
+	public class AuthService(IOptions<AppSettings> appSettings, UserContext userContext, ICryptoService cryptoService) : IAuthService
     {
-		private readonly UserContext _context = userContext;
-		private readonly CryptoService _cryptoService = cryptoService;
+        private readonly AppSettings _appSettings = appSettings.Value;
+        private readonly UserContext _context = userContext;
+		private readonly ICryptoService _cryptoService = cryptoService;
+
+		public CryptoDTO GetEncryptedPassword(string password)
+		{
+			CryptoDTO cryptoDTO = new()
+			{
+				publicKey = _cryptoService.EncryptMessage(_cryptoService.GetPublicKey(), password)
+			};
+			return cryptoDTO;
+		}
 
 		public CryptoDTO GetPublicKey()
 		{
@@ -46,7 +60,7 @@ namespace project1.Services
 			{
 				Username = request.Username,
 				Email = request.Email,
-				Password = CryptoService.HashSha256(CryptoService.DecryptMessage(request.Password)),
+				Password = _cryptoService.HashSha256(_cryptoService.DecryptMessage(request.Password)),
 				Role = "guest",
 				LoginMethod = request.LoginMethod,
 				CreatedDate = DateTime.Now,
@@ -56,10 +70,10 @@ namespace project1.Services
 			await _context.Users.AddAsync(user);
 			await _context.SaveChangesAsync();
 			
-			return UserToUserDTO(user);
+			return userToUserDTO(user);
         }
 
-		public async Task<UserDTO> Login(UserRequest userRequest)
+		public async Task<AuthDTO> Login(UserRequest userRequest)
 		{
 			if (userRequest.LoginMethod == "google")
 			{
@@ -73,14 +87,16 @@ namespace project1.Services
 
 			if (userRequest.Password != null)
 			{
-				var password = CryptoService.HashSha256(CryptoService.DecryptMessage(userRequest.Password));
+				var password = _cryptoService.HashSha256(_cryptoService.DecryptMessage(userRequest.Password));
 
 				if (password == user.Password)
 				{
 					user.LastLoggedOn = DateTime.Now;
 					await _context.SaveChangesAsync();
 
-					return UserToUserDTO(user);
+                    var token = await generateJwtToken(user);
+
+                    return new AuthDTO(user, token);
 				}
 				else 
 				{
@@ -102,12 +118,12 @@ namespace project1.Services
 			
 			if (request.Password != null)
 			{
-				var password = CryptoService.HashSha256(CryptoService.DecryptMessage(request.Password));
+				var password = _cryptoService.HashSha256(_cryptoService.DecryptMessage(request.Password));
 				string NewPassword = null;
 
 				if (request.NewPassword != null)
 				{
-					NewPassword = CryptoService.HashSha256(CryptoService.DecryptMessage(request.NewPassword));
+					NewPassword = _cryptoService.HashSha256(_cryptoService.DecryptMessage(request.NewPassword));
 				}
 
 				if (password == user.Password)
@@ -118,7 +134,7 @@ namespace project1.Services
 
 					await _context.SaveChangesAsync();
 
-					return UserToUserDTO(user);
+					return userToUserDTO(user);
 				}
 				else 
 				{
@@ -140,7 +156,7 @@ namespace project1.Services
 			
 			if (request.Password != null)
 			{
-				var password = CryptoService.HashSha256(CryptoService.DecryptMessage(request.Password));
+				var password = _cryptoService.HashSha256(_cryptoService.DecryptMessage(request.Password));
 
 				if (password == user.Password)
 				{
@@ -158,7 +174,7 @@ namespace project1.Services
 			}
         }
 
-        private static UserDTO UserToUserDTO(User user)
+        private static UserDTO userToUserDTO(User user)
         {
             return new UserDTO()
             {
@@ -168,6 +184,33 @@ namespace project1.Services
                 LoginMethod = user.LoginMethod,
                 LastLoggedOn = user.LastLoggedOn
             };
+        }
+
+        public async Task<User> FindUserByUsername(string username)
+        {
+            User user = await _context.Users
+				.FirstOrDefaultAsync(user => user.Username == username) ?? throw new NotFoundException();
+
+            return user;
+        }
+
+        private async Task<string> generateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = await Task.Run(() =>
+            {
+
+                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new[] { new Claim("username", user.Username) }),
+                    Expires = DateTime.UtcNow.AddMinutes(30),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                return tokenHandler.CreateToken(tokenDescriptor);
+            });
+
+            return tokenHandler.WriteToken(token);
         }
     }
 }
