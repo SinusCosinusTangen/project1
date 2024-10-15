@@ -31,4 +31,19 @@ namespace project1.Exceptions
         {
         }
     }
+
+    public class EmptyTokenException : Exception
+    {
+        public EmptyTokenException() : base("Token is null or empty")
+        {
+        }
+
+        public EmptyTokenException(string message) : base(message)
+        {
+        }
+
+        public EmptyTokenException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
 }

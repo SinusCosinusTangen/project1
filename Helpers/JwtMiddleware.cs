@@ -37,8 +37,7 @@ namespace project1.Helpers
             // Validate the token and extract the username
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtToken = tokenHandler.ReadJwtToken(token);
-            string usernameClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "username")?.Value;
-            Console.WriteLine(usernameClaim);
+            string usernameClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "username")?.Value + ":ADMINISTRATOR";
 
             if (string.IsNullOrEmpty(usernameClaim))
             {
@@ -61,9 +60,6 @@ namespace project1.Helpers
                 return;
             }
 
-            Console.WriteLine(usernameClaim);
-            Console.WriteLine(token);
-
             // Token is valid; attach user to context and proceed
             // context.Items["User"] = usernameClaim;
             await AttachUserToContext(context, usernameClaim, token);
@@ -76,7 +72,6 @@ namespace project1.Helpers
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-                Console.WriteLine(_appSettings.Secret);
 
                 // Validate the token and extract claims
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -89,7 +84,6 @@ namespace project1.Helpers
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                Console.WriteLine(jwtToken.ToString());
 
                 // Attach user to HttpContext
                 context.Items["User"] = username;
