@@ -50,10 +50,11 @@ namespace project1.Helpers
             var db = _connectionMultiplexer.GetDatabase();
 
             // Check if the token exists in Redis using the username as the key
-            var redisToken = await db.StringGetAsync(usernameClaim);
+            var redisToken = await db.ListRangeAsync(usernameClaim);
+            var tokenList = redisToken.Select(t => t.ToString()).ToList();
 
             // Ensure redisToken is not null or empty
-            if (redisToken.IsNullOrEmpty)
+            if (tokenList.Count == 0 || !tokenList.Contains(token))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized; // Unauthorized
                 await context.Response.WriteAsync("Token is invalid or revoked.");
