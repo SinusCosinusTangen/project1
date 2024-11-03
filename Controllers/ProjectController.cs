@@ -82,6 +82,10 @@ namespace project1.Controllers
                 var createdProject = await _projectService.CreateProject(project);
                 return Ok(new Response<ProjectDTO>(ApiConstant.OK, ApiConstant.OK_MESSAGE, createdProject));
             }
+            catch (EmptyTokenException)
+            {
+                return Unauthorized(new Response<string>(ApiConstant.UNAUTHORIZED, ApiConstant.UNAUTHORIZED_MESSAGE, "TOKEN IS EMPTY"));
+            }
             catch (Exception)
             {
                 throw;

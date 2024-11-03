@@ -37,8 +37,7 @@ namespace project1.Helpers
             // Validate the token and extract the username
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtToken = tokenHandler.ReadJwtToken(token);
-            string usernameClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "username")?.Value;
-            Console.WriteLine(usernameClaim);
+            string usernameClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "username")?.Value + ":ADMINISTRATOR";
 
             if (string.IsNullOrEmpty(usernameClaim))
             {
@@ -51,18 +50,16 @@ namespace project1.Helpers
             var db = _connectionMultiplexer.GetDatabase();
 
             // Check if the token exists in Redis using the username as the key
-            var redisToken = await db.StringGetAsync(usernameClaim);
+            var redisToken = await db.ListRangeAsync(usernameClaim);
+            var tokenList = redisToken.Select(t => t.ToString()).ToList();
 
             // Ensure redisToken is not null or empty
-            if (redisToken.IsNullOrEmpty)
+            if (tokenList.Count == 0 || !tokenList.Contains(token))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized; // Unauthorized
                 await context.Response.WriteAsync("Token is invalid or revoked.");
                 return;
             }
-
-            Console.WriteLine(usernameClaim);
-            Console.WriteLine(token);
 
             // Token is valid; attach user to context and proceed
             // context.Items["User"] = usernameClaim;
@@ -76,7 +73,6 @@ namespace project1.Helpers
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-                Console.WriteLine(_appSettings.Secret);
 
                 // Validate the token and extract claims
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -89,7 +85,6 @@ namespace project1.Helpers
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                Console.WriteLine(jwtToken.ToString());
 
                 // Attach user to HttpContext
                 context.Items["User"] = username;

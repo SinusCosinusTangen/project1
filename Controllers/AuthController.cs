@@ -7,14 +7,14 @@ using project1.Helpers;
 
 namespace project1.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    // [Route("api/[controller]")]
+    // [ApiController]
     public class AuthController(IAuthService authService) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
 
         // GET: api/Auth
-        [HttpGet]
+        // [HttpGet]
         public ActionResult<Response<CryptoDTO>> GetPublicKey()
         {
             CryptoDTO cryptoDTO = _authService.GetPublicKey();
@@ -22,7 +22,7 @@ namespace project1.Controllers
             return Ok(new Response<CryptoDTO>(ApiConstant.OK, ApiConstant.OK_MESSAGE, cryptoDTO));
         }
 
-        [HttpGet("encrypt/{request}")]
+        // [HttpGet("encrypt/{request}")]
         public ActionResult<Response<CryptoDTO>> Encrypt(string request)
         {
             CryptoDTO cryptoDTO = _authService.GetEncryptedPassword(request);
@@ -31,7 +31,7 @@ namespace project1.Controllers
         }
 
         // GET: api/Auth/register
-        [HttpPost("register")]
+        // [HttpPost("register")]
         public async Task<ActionResult<Response<UserDTO>>> RegisterUser(UserRequest request)
         {
             try
@@ -59,7 +59,7 @@ namespace project1.Controllers
         }
 
         // GET: api/Auth/login
-        [HttpPost("login")]
+        // [HttpPost("login")]
         public async Task<ActionResult<Response<AuthDTO>>> LoginUser(UserRequest request)
         {
             try
@@ -83,8 +83,8 @@ namespace project1.Controllers
 
         // PUT: api/Auth/update-user
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("update-user")]
-        [Authorize]
+        // [HttpPut("update-user")]
+        // [Authorize]
         public async Task<ActionResult<Response<UserDTO>>> UpdateUser(UserRequest request)
         {
             try
@@ -107,8 +107,8 @@ namespace project1.Controllers
         }
 
         // DELETE: api/Auth/delete-user
-        [HttpDelete("delete-user")]
-        [Authorize]
+        // [HttpDelete("delete-user")]
+        // [Authorize]
         public async Task<IActionResult> DeleteProject(UserRequest request)
         {
             try

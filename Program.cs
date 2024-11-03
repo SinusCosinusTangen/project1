@@ -7,8 +7,6 @@ using project1.Models;
 using project1.Services;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.IdentityModel.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,7 +49,6 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 // Configure authentication
 var secret = builder.Configuration["AppSettings:Secret"];
 var key = Encoding.ASCII.GetBytes(secret);
-Console.WriteLine(key.ToString());
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
